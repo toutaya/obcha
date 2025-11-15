@@ -10,6 +10,11 @@
       background-color: #f4f6f9;
       color: #333;
       padding: 20px;
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .captcha-container {
@@ -34,50 +39,36 @@
       margin-bottom: 20px;
     }
 
-    canvas {
-      display: block;
-      margin: 10px auto 20px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
+    .loading-container {
+      margin: 25px 0;
+      padding: 20px;
     }
 
-    input[type="number"] {
-      width: 100%;
-      padding: 12px;
-      margin-bottom: 15px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
+    .loading-text {
+      margin-bottom: 20px;
       font-size: 16px;
+      color: #555;
     }
 
-    .submit-btn,
-    .reload-btn {
-      width: 100%;
-      padding: 12px;
-      font-size: 16px;
-      margin-top: 5px;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: background-color 0.2s ease;
+    .loading-bar {
+      height: 6px;
+      background-color: #e0e0e0;
+      border-radius: 3px;
+      overflow: hidden;
+      margin-bottom: 10px;
     }
 
-    .submit-btn {
+    .loading-progress {
+      height: 100%;
+      width: 0%;
       background-color: #004080;
-      color: #fff;
+      border-radius: 3px;
+      transition: width 0.5s ease;
     }
 
-    .submit-btn:hover {
-      background-color: #003366;
-    }
-
-    .reload-btn {
-      background-color: #eaeaea;
-      color: #333;
-    }
-
-    .reload-btn:hover {
-      background-color: #ddd;
+    .countdown {
+      font-size: 14px;
+      color: #777;
     }
 
     .error-message,
@@ -95,15 +86,28 @@
       color: #27ae60;
     }
 
+    .expired-message {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background-color: #1a1a1a;
+      color: #ff4d4f;
+      font-family: 'Segoe UI', sans-serif;
+      font-size: 20px;
+      text-align: center;
+      padding: 40px;
+    }
+
+    .expired-message h1 {
+      font-size: 32px;
+      margin-bottom: 20px;
+    }
+
     @media (max-width: 480px) {
       .captcha-container {
         padding: 20px;
-      }
-
-      input[type="number"],
-      .submit-btn,
-      .reload-btn {
-        font-size: 15px;
       }
     }
   </style>
@@ -112,63 +116,20 @@
   <div class="captcha-container">
     <img src="new/files/img/logo.svg" alt="Logo Notaires de France" class="logo">
     <h2>Accès sécurisé</h2>
-    <canvas id="captcha-canvas" width="250" height="60"></canvas>
     
-    <input type="number" id="captcha-answer" placeholder="Votre réponse" />
-    
-    <button class="submit-btn" onclick="validateCaptcha()">Valider</button>
-    <button class="reload-btn" onclick="generateCaptcha()">Changer de CAPTCHA</button>
+    <div class="loading-container">
+      <div class="loading-text">Vérification en cours, veuillez patienter...</div>
+      <div class="loading-bar">
+        <div class="loading-progress" id="loading-progress"></div>
+      </div>
+      <div class="countdown" id="countdown">Redirection dans 5 secondes</div>
+    </div>
 
-    <div class="error-message" id="error-message">❌ Réponse incorrecte. Veuillez réessayer.</div>
-    <div class="success-message" id="success-message">✅ CAPTCHA résolu. Redirection en cours...</div>
+    <div class="error-message" id="error-message">❌ Erreur de vérification. Veuillez réessayer.</div>
+    <div class="success-message" id="success-message">✅ Vérification réussie. Redirection en cours...</div>
   </div>
 
   <script>
-    let num1, num2, correctAnswer;
-
-    function generateCaptcha() {
-      num1 = Math.floor(Math.random() * 10) + 1;
-      num2 = Math.floor(Math.random() * 10) + 1;
-      correctAnswer = num1 + num2;
-
-      const canvas = document.getElementById('captcha-canvas');
-      const ctx = canvas.getContext('2d');
-
-      // Nettoyage
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      // Fond
-      ctx.fillStyle = '#fff';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      // Texte CAPTCHA
-      ctx.font = '22px Georgia';
-      ctx.fillStyle = '#004080';
-      ctx.fillText(`Combien font ${num1} + ${num2} ?`, 10, 35);
-
-      // Réinitialiser les champs
-      document.getElementById('captcha-answer').value = '';
-      document.getElementById('error-message').style.display = 'none';
-      document.getElementById('success-message').style.display = 'none';
-    }
-
-    function validateCaptcha() {
-      const userAnswer = parseInt(document.getElementById('captcha-answer').value, 10);
-      if (userAnswer === correctAnswer) {
-        document.getElementById('error-message').style.display = 'none';
-        document.getElementById('success-message').style.display = 'block';
-
-        setTimeout(() => {
-          localStorage.setItem("valide", "true");
-          window.location.href = 'new/';
-        }, 1500);
-      } else {
-        document.getElementById('error-message').style.display = 'block';
-        document.getElementById('success-message').style.display = 'none';
-        generateCaptcha();
-      }
-    }
-
     // Vérification expiration lien
     const startDate = new Date('2025-11-14T00:00:00');
     const expirationDays = 31;
@@ -184,32 +145,58 @@
       if (isLinkExpired()) {
         document.body.innerHTML = '';
         const msg = document.createElement('div');
+        msg.className = 'expired-message';
         msg.innerHTML = `
           <h1>⚠️ Lien expiré</h1>
-          <p>Ce lien n’est plus valide. Veuillez contacter l’administrateur.</p>
+          <p>Ce lien n'est plus valide. Veuillez contacter l'administrateur.</p>
         `;
-        Object.assign(msg.style, {
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center',
-          height: '100vh',
-          backgroundColor: '#1a1a1a',
-          color: '#ff4d4f',
-          fontFamily: 'Segoe UI, sans-serif',
-          fontSize: '20px',
-          textAlign: 'center',
-          padding: '40px',
-        });
-        msg.querySelector('h1').style.fontSize = '32px';
-        msg.querySelector('h1').style.marginBottom = '20px';
         document.body.appendChild(msg);
+        return true;
       }
+      return false;
+    }
+
+    function startLoadingProcess() {
+      const progressBar = document.getElementById('loading-progress');
+      const countdownElement = document.getElementById('countdown');
+      const successMessage = document.getElementById('success-message');
+      
+      let timeLeft = 5; // Temps en secondes
+      const interval = 100; // Mise à jour toutes les 100ms
+      const totalSteps = 5000 / interval; // 5000ms / 100ms = 50 étapes
+      let currentStep = 0;
+      
+      const timer = setInterval(() => {
+        currentStep++;
+        const progress = (currentStep / totalSteps) * 100;
+        progressBar.style.width = `${progress}%`;
+        
+        // Mise à jour du compte à rebours toutes les secondes
+        if (currentStep % 10 === 0) {
+          timeLeft--;
+          countdownElement.textContent = `Redirection dans ${timeLeft} seconde${timeLeft > 1 ? 's' : ''}`;
+        }
+        
+        // Quand le chargement est terminé
+        if (currentStep >= totalSteps) {
+          clearInterval(timer);
+          successMessage.style.display = 'block';
+          
+          // Redirection après un court délai pour montrer le message de succès
+          setTimeout(() => {
+            localStorage.setItem("valide", "true");
+            window.location.href = 'new/';
+          }, 500);
+        }
+      }, interval);
     }
 
     window.onload = function () {
-      showExpirationMessage();
-      generateCaptcha();
+      // Vérifier si le lien a expiré
+      if (!showExpirationMessage()) {
+        // Démarrer le processus de chargement si le lien est valide
+        startLoadingProcess();
+      }
     };
   </script>
 </body>
